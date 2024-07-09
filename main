@@ -1,0 +1,106 @@
+import sqlite3
+
+con = sqlite3.connect('Testing.db')
+cur = con.cursor()
+
+Table1check = cur.execute("""SELECT name FROM sqlite_master WHERE type='table' AND name='TABLE1';""").fetchall()
+if not Table1check:
+    cur.execute("""CREATE TABLE TABLE1(ID INT, MONEY INT);""")
+else:
+    print('TABLE1 exists!')
+toggle = False
+while True:
+    command = input('Input Command: ')
+    command_list = command.split()
+    if command_list[0] == '?addmoney':
+        if len(command_list) != 3:
+            print(f"Error: Missing or Additional Arguments, 3 expected but {len(command_list)} were given")
+            continue
+        try:
+            id = int(command_list[1])
+        except:
+            print('Invalid Command Entered: id Entered Should Be INT')
+            continue
+
+        try:
+            amount = int(command_list[2])
+        except:
+            print('Invalid Command Entered: Amount Entered Should Be INT')
+            continue
+        sameid = cur.execute("""SELECT * FROM TABLE1 WHERE ID=?""", (id,)).fetchall()
+        if sameid:
+            amount += sameid[0][1]
+            cur.execute("UPDATE TABLE1 SET MONEY=? WHERE ID=?", (amount, id))
+            con.commit()
+            continue
+        cur.execute("INSERT INTO TABLE1 VALUES(?, ?)", (id, amount))
+        con.commit()
+    elif command_list[0] == '?readdata':
+        for row in cur.execute("SELECT * FROM TABLE1 ORDER BY ID"):
+            print(row)
+    elif command_list[0] == '?removemoney':
+        if len(command_list) != 3:
+            print(f"Error: Missing or Additional Arguments, 3 expected but {len(command_list)} were given")
+            continue
+        try:
+            id = int(command_list[1])
+        except:
+            print('Invalid Command Entered: id Entered Should Be INT')
+            continue
+        try:
+            amount = int(command_list[2])
+        except:
+            print('Invalid Command Entered: Amount Entered Should Be INT')
+            continue
+        sameid = cur.execute("""SELECT * FROM TABLE1 WHERE ID=?""", (id,)).fetchall()
+        if not sameid:
+            print('Error: ID Does Not Exist')
+            continue
+        total = sameid[0][1]
+        total -= amount
+        cur.execute("UPDATE TABLE1 SET MONEY=? WHERE ID=?", (total, id))
+        con.commit()
+    elif command_list[0] == '?lb':
+        for row in cur.execute("SELECT * FROM TABLE1 ORDER BY MONEY DESC;"):
+            print(row)
+    elif command_list[0] == '?clear':
+        if len(command_list) != 2:
+            print(f'Error: 2 Arguments Expected but {len(command_list)} where given')
+            continue
+        try:
+            id = int(command_list[1])
+        except:
+            print(f'Error: int expected but {type(command_list[1])} was given')
+            continue
+        cur.execute("UPDATE TABLE1 SET MONEY=0 WHERE ID=?", (id,))
+        con.commit()
+    elif command_list[0] == '?deleteid':
+        if len(command_list) != 2:
+            print(f'Error: 2 arguments expected but {len(command_list)} were given')
+            continue
+        try:
+            id = int(command_list[1])
+        except:
+            print(f'Error: int expected but {type(command_list[1])} was given')
+            continue
+        sameid = cur.execute("""SELECT * FROM TABLE1 WHERE ID=?""", (id,)).fetchall()
+        if not sameid:
+            print(f"Error: id does not exist")
+            continue
+        cur.execute("DELETE FROM TABLE1 WHERE ID=?", (id,))
+        con.commit()
+    elif command_list[0] == '?toggleautoread':
+        if len(command_list) != 2:
+            print(f'Error: 2 arguments expected but {len(command_list)} were given')
+            continue
+        try:
+            toggle = bool(command_list[1])
+        except:
+            print(f"Error: Boolean Value expected but {type(command_list[1])} was given")
+            continue
+    else:
+        print('Invalid Command Entered: Command Does Not Exist')
+        continue
+    if toggle:
+        for row in cur.execute("SELECT * FROM TABLE1 ORDER BY MONEY DESC;"):
+            print(row)
